@@ -1,0 +1,44 @@
+#!/bin/bash
+
+commit_msg_file="$1"
+
+warn() {
+  printf "\033[33mWarning: %s\033[0m\n" "$1" >&2   
+}
+
+error() {
+  printf "\033[31mError: %s\033[0m\n" "$1" >&2  
+  exit 1
+}
+
+formatCommitMsg(){
+
+  commit_msg=$(cat "$commit_msg_file")
+
+  # Check if the commit message already starts with the ticket key
+  if [[ "$commit_msg" =~ ^$1[[:space:]] ]]; then
+    exit 0
+  else
+    new_commit_msg="$1 $commit_msg"
+    echo "$new_commit_msg" > "$commit_msg_file"
+  fi
+
+}
+
+branch_name=$(git symbolic-ref --short HEAD 2>/dev/null)
+
+if [ -z "$branch_name" ]; then
+  error "Cannot determine the current branch name."
+fi
+
+# Extract the JIRA ticket key using regex
+if [[ "$branch_name" =~ ^([A-Z]+-[0-9]+)-.*$ ]]; then
+  ticket_key="${BASH_REMATCH[1]}"
+  formatCommitMsg $ticket_key
+
+else
+  warn "Branch name doesn't start with a JIRA ticket"
+fi
+
+
+exit 0

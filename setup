@@ -1,0 +1,57 @@
+#!/bin/bash
+
+
+
+HOOKS_DIR="$HOME/.git-templates/hooks"
+HOOK_NAME="commit-msg"
+HOOK_SCRIPT="https://raw.githubusercontent.com/Qa5imm/git-hooks/main/commit-msg"
+
+
+error() {
+  printf "\033[31mError: %s\033[0m\n" "$1" >&2  
+  exit 1
+}
+
+command_exists() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+
+if ! command_exists curl && ! command_exists wget; then
+  error "Neither curl nor wget is installed. Please install one to proceed."
+fi
+
+if [ ! -d "$HOOKS_DIR" ]; then
+  mkdir -p "$HOOKS_DIR"
+  echo "Created hooks directory at $HOOKS_DIR."
+else
+  echo "Hooks directory already exists at $HOOKS_DIR."
+fi
+
+
+if command_exists curl; then
+  curl -fsSL "$HOOK_SCRIPT" -o "$HOOKS_DIR/$HOOK_NAME" || {
+    error "Failed to download $HOOK_NAME using curl."
+  }
+elif command_exists wget; then
+  wget -q "$HOOK_SCRIPT" -O "$HOOKS_DIR/$HOOK_NAME" || {
+    error "Failed to download $HOOK_NAME using wget."
+  }
+fi
+echo "Downloaded $HOOK_NAME hook successfully."
+
+# Make the hook script executable
+chmod +x "$HOOKS_DIR/$HOOK_NAME"
+
+# Configure Git to use the global hooks directory
+current_hooks_path=$(git config --global core.hooksPath || echo "")
+if [ "$current_hooks_path" != "$HOOKS_DIR" ]; then
+  git config --global core.hooksPath "$HOOKS_DIR"
+  echo "Configured Git to use global hooks path: $HOOKS_DIR."
+else
+  echo "Git is already configured globally to use hooks path: $HOOKS_DIR."
+fi
+
+printf "\n\033[32m%s\033[0m\n" "Git hook(s) setup was successful!"
+ 
+
